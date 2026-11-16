@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://forms.yandex.ru/_static/embed.js"></script>
   <style>
     body {
       margin: 0;
@@ -42,7 +41,6 @@
       <div class="p-6 sm:p-8 space-y-6">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Ежеквартальный тест eCredit</h1>
 
-        <!-- Условия прохождения теста на стартовом экране -->
         <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
           <div class="text-sm font-semibold text-gray-900">Условия прохождения теста:</div>
           <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
@@ -61,17 +59,17 @@
       </div>
     </div>
 
-    <!-- Официальный iframe Яндекс Формы (без каких-либо добавлений на фронт) -->
+    <!-- Встроенная Google Форма -->
     <div id="formContainer" class="hidden">
       <iframe
-        id="yandexOfficialIframe"
+        id="googleFormIframe"
         src="about:blank"
-        name="ya-form-6afb482aaeb3522cdcc6c211"
         title="Ежеквартальный тест eCredit"
         frameborder="0"
-        width="100%"
-        class="w-full max-w-full block border-0 min-h-[600px]"
-      ></iframe>
+        marginheight="0"
+        marginwidth="0"
+        class="w-full max-w-full block border-0 h-[820px]"
+      >Загрузка…</iframe>
     </div>
 
     <!-- Экран по истечении 30 минут -->
@@ -89,9 +87,10 @@
   </main>
 
   <script>
-    const YANDEX_IFRAME_URL = 'https://forms.yandex.ru/u/6afb482aaeb3522cdcc6c211?iframe=1';
+    // Вставьте сюда ссылку из журнала Apps Script (вида https://docs.google.com/forms/d/e/.../viewform?embedded=true)
+    const GOOGLE_FORM_EMBED_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf4tK4kYVmlGjZk2mn9dC-aBGHf1KBaqqGBLPZjntDy_4Lymg/viewform?embedded=true';
     const DURATION_SECONDS = 30 * 60; // 1800 секунд = 30 минут
-    const STORAGE_KEY = 'ecredit_quiz_state_v11_6afb482aaeb3522cdcc6c211';
+    const STORAGE_KEY = 'ecredit_google_form_timer_v1';
 
     let timerInterval = null;
     let endTimeMs = null;
@@ -150,7 +149,7 @@
           display.className = 'font-mono text-xl font-bold text-red-600';
         }
 
-        const iframe = document.getElementById('yandexOfficialIframe');
+        const iframe = document.getElementById('googleFormIframe');
         if (iframe) iframe.src = 'about:blank';
 
         document.getElementById('formContainer').classList.add('hidden');
@@ -166,10 +165,10 @@
       }
     }
 
-    function openYandexFormIframe() {
-      const iframe = document.getElementById('yandexOfficialIframe');
+    function openGoogleFormIframe() {
+      const iframe = document.getElementById('googleFormIframe');
       if (iframe) {
-        iframe.src = YANDEX_IFRAME_URL;
+        iframe.src = GOOGLE_FORM_EMBED_URL;
       }
       document.getElementById('startScreen').classList.add('hidden');
       document.getElementById('expiredScreen').classList.add('hidden');
@@ -181,7 +180,7 @@
       endTimeMs = Date.now() + DURATION_SECONDS * 1000;
       savePersistedState();
 
-      openYandexFormIframe();
+      openGoogleFormIframe();
       updateTimer();
 
       if (timerInterval) clearInterval(timerInterval);
@@ -197,7 +196,7 @@
       isTestActive = false;
       savePersistedState();
 
-      const iframe = document.getElementById('yandexOfficialIframe');
+      const iframe = document.getElementById('googleFormIframe');
       if (iframe) iframe.src = 'about:blank';
 
       const display = document.getElementById('timerDisplay');
@@ -221,7 +220,7 @@
         if (Date.now() >= endTimeMs) {
           updateTimer();
         } else {
-          openYandexFormIframe();
+          openGoogleFormIframe();
           updateTimer();
           if (timerInterval) clearInterval(timerInterval);
           timerInterval = setInterval(updateTimer, 250);
