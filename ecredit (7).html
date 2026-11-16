@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ежеквартальный тест eCredit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://forms.yandex.ru/_static/embed.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4">
+
+  <!-- Плашка таймера 30:00 и счётчика попыток -->
+  <div class="sticky top-3 z-50 w-full max-w-[680px] mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-medium text-gray-600">Осталось времени:</span>
+        <span id="timerDisplay" class="font-mono text-xl font-bold text-gray-900">30:00</span>
+      </div>
+      <div id="attemptsBadge" class="text-xs sm:text-sm font-semibold px-3 py-1 rounded-lg bg-gray-100 text-gray-700">
+        Использовано попыток: 0 из 2
+      </div>
+    </div>
+  </div>
+
+  <!-- Контейнер оригинальной Яндекс Формы -->
+  <main class="w-full max-w-[680px] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+    <!-- Экран до нажатия на кнопку «Начать тест» -->
+    <div id="startScreen">
+      <img
+        src="https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/1280x"
+        alt="Ежеквартальный тест eCredit"
+        class="w-full max-w-full h-auto block"
+      />
+      <div class="p-6 sm:p-8 space-y-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Ежеквартальный тест eCredit</h1>
+
+        <!-- Условия прохождения теста на стартовом экране -->
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
+          <div class="text-sm font-semibold text-gray-900">Условия прохождения теста:</div>
+          <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <li>На прохождение теста даётся ровно <strong>30 минут</strong>.</li>
+            <li>На прохождение теста даётся <strong>2 попытки</strong>.</li>
+            <li>Таймер запускается сразу после нажатия на кнопку «Начать тест».</li>
+          </ul>
+          <div id="startAttemptsInfo" class="pt-1 text-xs font-semibold text-gray-600">
+            Доступно попыток: 2 из 2
+          </div>
+        </div>
+
+        <div id="noAttemptsNotice" class="hidden p-4 rounded-xl bg-red-50 border border-red-200 text-sm font-medium text-red-800">
+          Вы уже использовали все 2 попытки. Прохождение теста закрыто.
+        </div>
+
+        <button
+          type="button"
+          id="btnStartTest"
+          onclick="startTest()"
+          class="px-6 py-3 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] active:bg-[#c92e12] text-white font-medium text-base transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Начать тест
+        </button>
+      </div>
+    </div>
+
+    <!-- Экран прохождения оригинальной Яндекс Формы -->
+    <div id="formContainer" class="hidden">
+      <div id="pageBannerWrapper" class="hidden">
+        <img
+          id="pageBannerImg"
+          src="https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/1280x"
+          alt="Баннер формы"
+          class="w-full max-w-full h-auto block"
+        />
+      </div>
+      <form id="yandexFormElement" onsubmit="handleFormSubmit(event)" novalidate class="p-6 sm:p-8 space-y-6">
+        <div id="pageItemsContainer" class="space-y-6"></div>
+
+        <!-- Официальный iframe Яндекс Формы (синхронизируется на финальном 29-м шаге) -->
+        <div id="officialIframeSection" class="hidden pt-2">
+          <iframe
+            id="yandexOfficialIframe"
+            src="https://forms.yandex.ru/surveys/13914014.3cc0ac16af0e84e253ef151ac4a3cb9d44250e6d?iframe=1"
+            frameborder="0"
+            name="ya-form-13914014.3cc0ac16af0e84e253ef151ac4a3cb9d44250e6d"
+            width="650"
+            class="w-full max-w-full mx-auto block min-h-[260px]"
+          ></iframe>
+        </div>
+
+        <!-- Навигационные кнопки Яндекс Формы (Назад / Далее / Отправить) -->
+        <div class="pt-4 flex items-center gap-3">
+          <button
+            type="button"
+            id="btnPrevPage"
+            onclick="prevPage()"
+            class="hidden px-6 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium text-base transition cursor-pointer"
+          >
+            Назад
+          </button>
+          <button
+            type="button"
+            id="btnNextPage"
+            onclick="nextPage()"
+            class="px-6 py-2.5 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] active:bg-[#c92e12] text-white font-medium text-base transition cursor-pointer"
+          >
+            Далее
+          </button>
+          <button
+            type="submit"
+            id="btnSubmitForm"
+            class="hidden px-6 py-2.5 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] active:bg-[#c92e12] text-white font-medium text-base transition cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          >
+            Отправить
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Экран после отправки ответа -->
+    <div id="resultScreen" class="hidden p-6 sm:p-8 space-y-6">
+      <div class="space-y-2">
+        <h2 id="resultMainTitle" class="text-2xl font-bold text-gray-900">Спасибо!</h2>
+        <p id="resultSubtitle" class="text-base text-gray-600">Ваше сообщение отправлено. Тест закрыт.</p>
+      </div>
+
+      <div id="quizOutcomeBox" class="p-5 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
+        <div id="quizOutcomeTitle" class="text-lg font-bold text-gray-900"></div>
+        <div id="quizScoreLine" class="text-base font-medium text-gray-700"></div>
+        <div id="resultAttemptsText" class="text-xs font-medium text-gray-500 pt-1"></div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          id="btnToggleCorrect"
+          onclick="toggleCorrectReview()"
+          class="px-5 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium text-sm transition cursor-pointer"
+        >
+          Посмотреть ответы
+        </button>
+        <button
+          type="button"
+          id="btnFillAgain"
+          onclick="fillAgain()"
+          class="px-5 py-2.5 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] text-white font-medium text-sm transition cursor-pointer"
+        >
+          Заполнить ещё раз
+        </button>
+      </div>
+
+      <div id="correctReviewContainer" class="hidden space-y-4 pt-4 border-t border-gray-200"></div>
+    </div>
+
+    <!-- Экран по истечении 30 минут -->
+    <div id="expiredScreen" class="hidden p-8 text-center space-y-4">
+      <p class="text-lg font-semibold text-gray-900">Время на прохождение теста (30 минут) истекло. Тест закрыт.</p>
+      <p id="expiredAttemptsInfo" class="text-sm text-gray-600"></p>
+      <button
+        type="button"
+        id="btnRestartAfterExpired"
+        onclick="fillAgain()"
+        class="px-5 py-2.5 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] text-white font-medium text-sm transition cursor-pointer"
+      >
+        Заполнить ещё раз
+      </button>
+    </div>
+
+  </main>
+
+  <iframe id="hiddenSubmitTransport" name="hiddenSubmitTransport" title="Транспорт Яндекс Формы" class="hidden"></iframe>
+
+  <script>
+    const SURVEY_DATA = {"id": 13914014, "name": "Ежеквартальный тест eCredit", "created": "2026-10-30T08:58:31Z", "language": "ru", "hashed_id": "13914014.3cc0ac16af0e84e253ef151ac4a3cb9d44250e6d", "is_published": true, "is_public": true, "is_favourite": false, "allow_multiple_answers": true, "show_last_answer": false, "texts": {"submit": "Отправить", "back": "Назад", "next": "Далее", "title": "Спасибо!", "subtitle": "Ваше сообщение отправлено.", "redirect": "Перейти на сайт"}, "answers": 12, "iframe": false, "footer": true, "teaser": true, "stats": false, "share": true, "fill_again": true, "quiz": {"show_results": true, "show_format": "score_with_total", "show_correct": true, "calc_method": "scores", "pass_scores": "17", "question_count": 18, "total_scores": "20.0", "items": [{"title": "К сожалению вы не набрали необходимый минимум. Попробуйте еще раз!", "description": ""}, {"title": "Поздравляем! Вы успешно прошли тест", "description": ""}]}, "need_auth": false, "export_to_yt": false, "is_new_frontend": true, "version": 2, "questions": {"pages": [{"id": 385070, "items": [{"id": 58242557, "slug": "answer_statement_9008992605487546", "hidden": false, "image": {"id": 230700, "links": {"1280x": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/1280x", "400x512": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/400x512", "324x180": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/324x180", "200x256": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/200x256", "56x40": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/56x40", "720x": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/720x", "2560x": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/2560x", "360x": "https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/360x"}, "name": "360x.png"}, "type": "comment", "header": true}, {"id": 58242559, "label": "Привет! Это команда еКредит 👋 Мы хотим, чтобы работа с платформой приносила только пользу, поэтому собрали несколько важных вопросов. Давайте начнём с знакомства: представьтесь, пожалуйста:", "slug": "answer_statement_9008992605524660", "hidden": false, "type": "comment", "header": true}, {"id": 58242561, "label": "Укажите свой ФИО", "slug": "answer_short_text_9008992605567780", "hidden": false, "type": "string", "multiline": false, "validators": [{"type": "required"}]}, {"id": 58242562, "label": "Укажите название вашего Дилерского центра", "slug": "answer_short_text_9008992605580118", "hidden": false, "type": "string", "multiline": false, "validators": [{"type": "required"}]}, {"id": 58242563, "label": "Укажите город", "slug": "answer_short_text_9008992605592892", "hidden": false, "type": "string", "multiline": false, "validators": [{"type": "required"}]}, {"id": 58242564, "label": "Укажите номер телефона", "slug": "answer_short_text_9008992605603108", "hidden": false, "type": "string", "multiline": false, "validators": [{"type": "required"}]}, {"id": 58242566, "label": "Укажите вашу должность", "slug": "answer_short_text_9008992605612112", "hidden": false, "type": "string", "multiline": false, "validators": [{"type": "required"}]}]}, {"id": 385073, "items": [{"id": 58242583, "label": "В случае возникновения вопросов по работе с платформой eCredit, куда вы можете обратиться за помощью? (Множественный выбор)", "slug": "answer_quiz_multiple_answers_9008992605686392", "hidden": false, "type": "enum", "widget": "checkbox", "items": [{"id": 74123385, "slug": "1793350956242", "label": "В тех. поддержку платформы", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123386, "slug": "1793350956243", "label": "К куратору платформы eCredit", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123387, "slug": "1793350956244", "label": "В тех. поддержку банка", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385074, "items": [{"id": 58242584, "label": "На какую кнопку в меню слева необходимо нажать для заведения заявки?", "slug": "answer_quiz_one_answer_9008992605720898", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123390, "slug": "1793350991442", "label": "Расчет кредита", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123391, "slug": "1793350991443", "label": "Список заявок", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123392, "slug": "1793350991444", "label": "Завести заявку", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385076, "items": [{"id": 58242586, "label": "Какой тип и категория автомобиля доступны для расчёта и подачи заявки на рассмотрение в банк через платформу eCredit?", "slug": "answer_quiz_one_answer_9008992605750952", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123398, "slug": "1793351020889", "label": "Новые и подержанные авто Категории B (легковой и легковой ком.транспорт)", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123399, "slug": "1793351020890", "label": "Только новые автомобили категории B и C", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123400, "slug": "1793351020891", "label": "Только подержанные авто категории B, C и D", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123401, "slug": "1793351020892", "label": "Новые и подержанные авто всех Категорий A, B, C, D", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385084, "items": [{"id": 58243075, "label": "Опишите правильные действия при работе с заявкой. На этапе калькулятора, когда появляются банки и тарифы, нужно выбрать...", "slug": "answer_quiz_one_answer_9008992606202180", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123760, "slug": "1793351474420", "label": "правильный тариф по каждому банку для отправки на рассмотрение", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123761, "slug": "1793351474421", "label": "Я не выбираю правильные тарифы для отправки, мне направляет информацию по одобрению - куратор банка", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385088, "items": [{"id": 58243078, "label": "Можно ли в платформе eCredit настроить \"приоритетность\" по сортировке тарифов по всем банкам?", "slug": "answer_quiz_one_answer_9008992606237948", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123765, "slug": "1793351509427", "label": "Да, можно", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123766, "slug": "1793351509428", "label": "Нет", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385089, "items": [{"id": 58243080, "label": "Где вы можете найти информацию о том, входит ли какая-либо дополнительная услуга БАНКА в выбранный вами тариф?", "slug": "answer_quiz_one_answer_9008992606266286", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123786, "slug": "1793351542493", "label": "Сведения о доп. услугах банка я могу найти в прямоугольнике с выбранным тарифом по банку, в отдельной рамочке - \"Другие услуги банка\"", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123787, "slug": "1793351542494", "label": "необходимо самостоятельно добавить доп. услугу банка в поле \"на страховки, руб.\"", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123788, "slug": "1793351542495", "label": "Банк сам добавляет какие ему нужно доп. услуги в расчет", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385093, "items": [{"id": 58243124, "label": "Какие документы необходимо загрузить по клиенту на этапе анкеты?", "slug": "answer_quiz_one_answer_9008992606358384", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123798, "slug": "1793351627830", "label": "Скан паспорта + второй документ по клиенту на выбор", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123799, "slug": "1793351627831", "label": "Паспорт разворот с фото клиента + Водительское удостоверение супруги", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123800, "slug": "1793351627832", "label": "Документы вкладывать не нужно", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385094, "items": [{"id": 58243126, "label": "Что нужно сделать, если прописка клиента отсутствует в справочниках КЛАДР (классификатор адресов РФ) в платформе eCredit?", "slug": "answer_quiz_one_answer_9008992606429428", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123809, "slug": "1793351702281", "label": "Необходимо выбрать из предложенных вариантов максимально похожий адрес (далее можно изменить его при проведении Цифровой Сделки или в ПО банка)", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123810, "slug": "1793351702282", "label": "Остановить заведение заявки по клиенту", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385096, "items": [{"id": 58243223, "label": "Каким образом происходит подписание Согласия на обработку персональных данных клиента?", "slug": "answer_quiz_one_answer_9008992606532322", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123821, "slug": "1793351816557", "label": "Через отправку СМС сообщения, по кнопке \"отправить на подписание\", клиенту с последующим обратным сообщением содержащим 6-ти значный код", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123822, "slug": "1793351816558", "label": "Через подписание \"живой\" подписью СОПД и загрузки его на платформу", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385097, "items": [{"id": 58243240, "label": "Возможно ли редактирование \"ключевых данных\" клиента (паспортные данные, второй документ и прописка) ДО отправки информации в банки?", "slug": "answer_quiz_one_answer_9008992606588520", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123860, "slug": "1793351864126", "label": "Да", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123861, "slug": "1793351864127", "label": "Нет", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385103, "items": [{"id": 58243260, "label": "Возможно ли направить заявку на рассмотрение по клиенту без загрузки справки о доходах?", "slug": "answer_quiz_one_answer_9008992606619320", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123863, "slug": "1793351897326", "label": "Да (справка требуется только для проведения кредитной сделки)", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123864, "slug": "1793351897327", "label": "Нет (необходимо обязательно загрузить справку, иначе платформа не пропустит дальше)", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385106, "items": [{"id": 58243292, "label": "Где найти сертификат одобрения в платформе eCredit?", "slug": "answer_quiz_one_answer_9008992606668304", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123870, "slug": "1793351938135", "label": "По кнопке \"распечатать\" в \"расхлопе\" по клиенту (при нажатии на запись с клиентом во вкладке - \"Список заявок\")", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123871, "slug": "1793351938136", "label": "Сертификат одобрения присылает банк после одобрения клиента на почту", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123872, "slug": "1793351938137", "label": "никаких сертификатов на платформе нет", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123873, "slug": "1793351938138", "label": "Во вкладке \"Отчеты\"", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385108, "items": [{"id": 58243301, "label": "Нужно ли закрывать заявки по клиентам после проведения кредитных сделок или если клиент передумал покупать автомобиль?", "slug": "answer_quiz_one_answer_9008992606699708", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123941, "slug": "1793351975871", "label": "Да, обязательно нужно закрывать заявку по кнопке \"профинансировать и закрыть\" либо по кнопке \"поставить отказ от кредита\"", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123942, "slug": "1793351975872", "label": "Такого функционала на платформе eCredit не предусмотрено", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385110, "items": [{"id": 58243347, "label": "Какие данные ОБЯЗАТЕЛЬНО нужно указать при закрытии итоговых данных по заявке?", "slug": "answer_quiz_one_answer_9008992606763128", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123947, "slug": "1793352034335", "label": "VIN автомобиля, Марку, Модель, Комплектацию (если предусмотрено), Дополнительные услуги ДЦ, Первоначальный взнос, Срок кредита, Тариф банка", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123948, "slug": "1793352034336", "label": "Серию и номер ПТС(ЭПТС), первоначальный взнос, срок кредита", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123949, "slug": "1793352034337", "label": "Достаточно указать только тариф по банку", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385111, "items": [{"id": 58243350, "label": "Что делать если вы заметили неверный VIN в закрытой заявке?", "slug": "answer_quiz_one_answer_9008992606837912", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123953, "slug": "1793352104405", "label": "Обратиться в тех. поддержку платформы", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123954, "slug": "1793352104406", "label": "Оставить как есть", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385112, "items": [{"id": 58243446, "label": "Какие фильтры по программам настроены по умолчанию при получении расчета в калькуляторе? (Множественный выбор)", "slug": "answer_quiz_multiple_answers_9008992606868260", "hidden": false, "type": "enum", "widget": "checkbox", "items": [{"id": 74123960, "slug": "1793352141020", "label": "Два документа", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123961, "slug": "1793352141021", "label": "Direct", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123962, "slug": "1793352141022", "label": "Только новые автомобили", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123963, "slug": "1793352141023", "label": "С подтверждением дохода через Госуслуги", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385115, "items": [{"id": 58243452, "label": "Что происходит с документами, если при загрузке в анкету они не распознались автоматически?", "slug": "answer_quiz_one_answer_9008992606911232", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123969, "slug": "1793352179001", "label": "Они помещаются в папку \"Другие файлы\", откуда их нужно вручную распределить по типу документа, а также заполнить информацию ниже в анкете", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123970, "slug": "1793352179002", "label": "Они автоматически удаляются с платформы", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123971, "slug": "1793352179003", "label": "Заявка блокируется до обращения в техподдержку", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385118, "items": [{"id": 58243482, "label": "Сколько пользователей может работать под одним логином и сколько времени действует новый пароль для входа на платформу?", "slug": "answer_quiz_one_answer_9008992607012048", "hidden": false, "type": "enum", "widget": "radio", "items": [{"id": 74123987, "slug": "1793352286408", "label": "1 логин = 1 пользователь, новый пароль действует 15 минут", "hidden": false, "correct": true, "scores": "1"}, {"id": 74123988, "slug": "1793352286409", "label": "До 3 пользователей, пароль действует 24 часа", "hidden": false, "correct": false, "scores": "0"}, {"id": 74123989, "slug": "1793352286410", "label": "Неограниченное количество пользователей в рамках одного ДЦ, пароль действует 60 минут", "hidden": false, "correct": false, "scores": "0"}], "modify_choices": "natural", "validators": [{"type": "required"}], "has_quiz": true}]}, {"id": 385119, "items": [{"id": 58243592, "label": "Что означают цвета светофора решений по банкам на платформе (белый, зеленый, желтый, синий, красный)?", "slug": "answer_quiz_long_text_9008992607050338", "hidden": false, "type": "string", "initial": "", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385127, "items": [{"id": 58243828, "label": "При соблюдении каких условий платформа eCredit предложит предзаполнить данные анкеты (скопировать заявку) по номеру телефона клиента и нужно ли при этом заново подписывать СОПД?", "slug": "answer_quiz_long_text_9008992607379572", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385130, "items": [{"id": 58243872, "label": "Опишите полный алгоритм действий: как отправить заявку на повторное рассмотрение (пересмотр решения) с другими параметрами в конкретный банк?", "slug": "answer_quiz_long_text_9008992607677042", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385266, "items": [{"id": 58248335, "label": "Что произойдет, если внести изменения в «ключевые данные» (паспортные данные) клиента после того, как согласие уже было подписано?", "slug": "answer_quiz_long_text_9008992613915910", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385269, "items": [{"id": 58248361, "label": "Как настроить приоритетность кредитных программ внутри банка и как такие программы отображаются в списке на этапе калькулятора?", "slug": "answer_quiz_long_text_9008992613951306", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385270, "items": [{"id": 58248363, "label": "Если автомобиль не подходит в банки по году выпуска, уйдёт ли заявка в банки, в которых есть ограничение по году авто? Как сработает система?", "slug": "answer_quiz_long_text_9008992613989968", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385271, "items": [{"id": 58248366, "label": "Что необходимо обязательно указать при загрузке справки о доходах на этапе «Работа и Доход» в анкете?", "slug": "answer_quiz_long_text_9008992614016484", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385272, "items": [{"id": 58248371, "label": "Какими двумя способами можно перейти к закрытию заявки (внесению итоговых условий) из «Списка заявок»?", "slug": "answer_quiz_long_text_9008992614044600", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385274, "items": [{"id": 58248456, "label": "Как пользователь может без создания расчёта по клиенту увидеть на платформе, какие банки ему доступны для работы?", "slug": "answer_quiz_long_text_9008992614081712", "hidden": false, "type": "string", "multiline": true, "visual_editor": false, "validators": [{"type": "required"}]}]}, {"id": 385623, "items": [{"id": 58254197, "label": "Отправляя форму, вы подтверждаете согласие с [Политикой конфиденциальности](https://business.auto.ru/legal/ecredit/confidential/ru/index.html)", "slug": "answer_boolean_9008992621705588", "hidden": false, "type": "boolean", "validators": [{"type": "required"}]}]}]}, "hooks": [{"id": 14181730, "name": "Группа действий", "active": true, "subscriptions": [{"type": "email", "subject": "Ответ на форму {6ae45c37c728823837e8e1b0}", "body": "Получен <a href=\"{6ae45c37c728823837e8e1b4}\">ответ</a> на форму <a href=\"{6ae45c37c728823837e8e1b3}\">{6ae45c37c728823837e8e1b2}</a>.", "email_to_address": "{6ae45c37c728823837e8e1b1}", "id": 14278566, "active": false, "follow": false, "language": "ru", "variables": [{"id": "6ae45c37c728823837e8e1b0", "type": "form.name"}, {"id": "6ae45c37c728823837e8e1b1", "type": "form.author_email"}, {"id": "6ae45c37c728823837e8e1b2", "type": "form.name"}, {"id": "6ae45c37c728823837e8e1b3", "type": "form.url"}, {"id": "6ae45c37c728823837e8e1b4", "type": "form.answer_url"}], "email_from_address": "devnull@yandex-team.ru", "email_spam_check": true}]}], "access": [{"access": "restricted", "action": "change", "users": [{"id": 159199515, "uid": "1120000001138669", "login": "nikolskiyns", "display": "Никита Никольский", "email": "nikolskiy@ecredit.one", "avatar": "https://center-robot.yandex-team.ru/api/v1/user/nikolskiyns/avatar.jpg"}]}, {"access": "public", "action": "submit"}], "author": {"id": 159199515, "uid": "1120000001138669", "login": "nikolskiyns", "display": "Никита Никольский", "email": "nikolskiyns@yandex-team.ru", "avatar": "https://center-robot.yandex-team.ru/api/v1/user/nikolskiyns/avatar.jpg"}};
+
+    const YANDEX_SURVEY_URL = 'https://forms.yandex.ru/surveys/' + SURVEY_DATA.hashed_id + '/';
+    const YANDEX_IFRAME_BASE_URL = 'https://forms.yandex.ru/surveys/' + SURVEY_DATA.hashed_id + '?iframe=1';
+    const YANDEX_API_SUBMIT_URL = 'https://api.forms.yandex.net/v1/surveys/' + SURVEY_DATA.hashed_id + '/form';
+    const DURATION_SECONDS = 30 * 60; // 1800 секунд = ровно 30 минут
+    const MAX_ATTEMPTS = 2; // Ограничение в 2 попытки
+    const STORAGE_KEY = 'ecredit_quiz_state_v8_13914014';
+
+    let timerInterval = null;
+    let endTimeMs = null;
+    let currentPageIndex = 0;
+    let userAnswers = {};
+    let attemptsUsed = 0;
+    let isTestActive = false;
+
+    function loadPersistedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (typeof data.attemptsUsed === 'number') {
+          attemptsUsed = data.attemptsUsed;
+        }
+        if (data.isTestActive && data.endTimeMs) {
+          isTestActive = true;
+          endTimeMs = data.endTimeMs;
+          currentPageIndex = typeof data.currentPageIndex === 'number' ? data.currentPageIndex : 0;
+          userAnswers = data.userAnswers && typeof data.userAnswers === 'object' ? data.userAnswers : {};
+        }
+      } catch (e) {
+        // Игнорируем ошибки localStorage
+      }
+    }
+
+    function savePersistedState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          attemptsUsed: attemptsUsed,
+          isTestActive: isTestActive,
+          endTimeMs: endTimeMs,
+          currentPageIndex: currentPageIndex,
+          userAnswers: userAnswers
+        }));
+      } catch (e) {
+        // Игнорируем ошибки localStorage
+      }
+    }
+
+    function formatTime(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatLabelWithLinks(label) {
+      const escaped = escapeHtml(label);
+      return escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, function (_, text, url) {
+        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">' + text + '</a>';
+      });
+    }
+
+    function isItemRequired(item) {
+      if (!item.validators) return false;
+      return item.validators.some(function (v) { return v.type === 'required'; });
+    }
+
+    // Формирование официальной ссылки предзаполнения Яндекс Форм (?page=29&...)
+    function buildYandexPrefillUrl(includeIframeParam) {
+      const pages = SURVEY_DATA.questions.pages;
+      const finalPageNum = pages.length; // 29-я страница (финальный шаг с кнопкой «Отправить»)
+      const params = new URLSearchParams();
+      if (includeIframeParam) {
+        params.append('iframe', '1');
+      }
+      params.append('page', String(finalPageNum));
+
+      pages.forEach(function (page) {
+        page.items.forEach(function (item) {
+          if (item.hidden || item.type === 'comment') return;
+          let val = userAnswers[item.slug];
+          if (item.type === 'boolean' && val === undefined) {
+            val = true;
+          }
+          if (val === undefined || val === null) return;
+
+          if (item.type === 'boolean') {
+            params.append(item.slug, val ? 'True' : 'False');
+          } else if (Array.isArray(val)) {
+            val.forEach(function (v) {
+              params.append(item.slug, String(v));
+            });
+          } else {
+            params.append(item.slug, String(val));
+          }
+        });
+      });
+
+      return YANDEX_SURVEY_URL + '?' + params.toString();
+    }
+
+    function syncOfficialIframeOnFinalStep() {
+      const pages = SURVEY_DATA.questions.pages;
+      const officialSection = document.getElementById('officialIframeSection');
+      const officialIframe = document.getElementById('yandexOfficialIframe');
+      if (!officialSection || !officialIframe) return;
+
+      if (currentPageIndex === pages.length - 1) {
+        const prefillIframeUrl = buildYandexPrefillUrl(true);
+        if (officialIframe.getAttribute('data-loaded-url') !== prefillIframeUrl) {
+          officialIframe.src = prefillIframeUrl;
+          officialIframe.setAttribute('data-loaded-url', prefillIframeUrl);
+        }
+      }
+    }
+
+    function updateAttemptsUI() {
+      const badge = document.getElementById('attemptsBadge');
+      const startInfo = document.getElementById('startAttemptsInfo');
+      const noAttemptsNotice = document.getElementById('noAttemptsNotice');
+      const btnStart = document.getElementById('btnStartTest');
+      const btnFillAgain = document.getElementById('btnFillAgain');
+      const btnRestartExpired = document.getElementById('btnRestartAfterExpired');
+
+      const remaining = Math.max(0, MAX_ATTEMPTS - attemptsUsed);
+
+      if (badge) {
+        if (isTestActive) {
+          badge.textContent = 'Попытка: ' + attemptsUsed + ' из ' + MAX_ATTEMPTS;
+        } else {
+          badge.textContent = 'Использовано попыток: ' + attemptsUsed + ' из ' + MAX_ATTEMPTS;
+        }
+      }
+
+      if (startInfo) {
+        startInfo.textContent = 'Доступно попыток: ' + remaining + ' из ' + MAX_ATTEMPTS;
+      }
+
+      if (attemptsUsed >= MAX_ATTEMPTS) {
+        if (noAttemptsNotice) noAttemptsNotice.classList.remove('hidden');
+        if (btnStart) {
+          btnStart.disabled = true;
+          btnStart.classList.add('hidden');
+        }
+        if (btnFillAgain) btnFillAgain.classList.add('hidden');
+        if (btnRestartExpired) btnRestartExpired.classList.add('hidden');
+      } else {
+        if (noAttemptsNotice) noAttemptsNotice.classList.add('hidden');
+        if (btnStart) {
+          btnStart.disabled = false;
+          btnStart.classList.remove('hidden');
+        }
+        if (btnFillAgain) {
+          btnFillAgain.classList.remove('hidden');
+          btnFillAgain.textContent = 'Заполнить ещё раз (осталась ' + remaining + ' попытка)';
+        }
+        if (btnRestartExpired) {
+          btnRestartExpired.classList.remove('hidden');
+          btnRestartExpired.textContent = 'Заполнить ещё раз (осталась ' + remaining + ' попытка)';
+        }
+      }
+    }
+
+    function updateTimer() {
+      const display = document.getElementById('timerDisplay');
+      if (!endTimeMs) return;
+
+      const remainingMs = endTimeMs - Date.now();
+      const remainingSec = Math.ceil(remainingMs / 1000);
+
+      if (remainingMs <= 0) {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        isTestActive = false;
+        endTimeMs = null;
+        savePersistedState();
+
+        if (display) {
+          display.textContent = '00:00';
+          display.className = 'font-mono text-xl font-bold text-red-600';
+        }
+
+        sendAnswersToYandexForms();
+
+        document.getElementById('formContainer').classList.add('hidden');
+        document.getElementById('expiredScreen').classList.remove('hidden');
+
+        const expInfo = document.getElementById('expiredAttemptsInfo');
+        const rem = Math.max(0, MAX_ATTEMPTS - attemptsUsed);
+        if (expInfo) {
+          expInfo.textContent = rem > 0
+            ? 'Использовано попыток: ' + attemptsUsed + ' из ' + MAX_ATTEMPTS + '. У вас осталась еще ' + rem + ' попытка.'
+            : 'Вы использовали все ' + MAX_ATTEMPTS + ' попытки. Доступ к тесту закрыт.';
+        }
+        updateAttemptsUI();
+        return;
+      }
+
+      if (display) {
+        display.textContent = formatTime(remainingSec);
+        if (remainingSec <= 60) {
+          display.className = 'font-mono text-xl font-bold text-red-600';
+        } else {
+          display.className = 'font-mono text-xl font-bold text-gray-900';
+        }
+      }
+    }
+
+    function startTest() {
+      if (attemptsUsed >= MAX_ATTEMPTS) {
+        updateAttemptsUI();
+        return;
+      }
+
+      attemptsUsed += 1;
+      isTestActive = true;
+      endTimeMs = Date.now() + DURATION_SECONDS * 1000;
+      currentPageIndex = 0;
+      userAnswers = {};
+      savePersistedState();
+      updateAttemptsUI();
+
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('expiredScreen').classList.add('hidden');
+      document.getElementById('formContainer').classList.remove('hidden');
+
+      renderCurrentPage();
+      updateTimer();
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 250);
+    }
+
+    function renderCurrentPage() {
+      const pages = SURVEY_DATA.questions.pages;
+      const page = pages[currentPageIndex];
+      const container = document.getElementById('pageItemsContainer');
+      const bannerWrapper = document.getElementById('pageBannerWrapper');
+      const bannerImg = document.getElementById('pageBannerImg');
+
+      container.innerHTML = '';
+      bannerWrapper.classList.add('hidden');
+
+      page.items.forEach(function (item) {
+        if (item.hidden) return;
+
+        // Баннер в комментарии
+        if (item.type === 'comment' && item.image && item.image.links) {
+          const imgUrl = item.image.links['1280x'] || item.image.links['720x'] || item.image.links['360x'];
+          if (imgUrl) {
+            bannerImg.src = imgUrl;
+            bannerWrapper.classList.remove('hidden');
+          }
+          if (!item.label) return;
+        }
+
+        // Текстовый комментарий / заголовок
+        if (item.type === 'comment') {
+          const p = document.createElement('div');
+          p.className = 'text-base leading-relaxed text-gray-900';
+          p.innerHTML = formatLabelWithLinks(item.label || '');
+          container.appendChild(p);
+          return;
+        }
+
+        const req = isItemRequired(item);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'space-y-2';
+        wrapper.setAttribute('data-item-slug', item.slug);
+
+        if (item.type !== 'boolean') {
+          const labelEl = document.createElement('label');
+          labelEl.className = 'block text-base font-medium text-gray-900 leading-snug';
+          labelEl.innerHTML = formatLabelWithLinks(item.label || '') + (req ? ' <span class="text-[#fc3f1d]">*</span>' : '');
+          wrapper.appendChild(labelEl);
+        }
+
+        if (item.type === 'string') {
+          const savedVal = userAnswers[item.slug] || '';
+          if (item.multiline) {
+            const textarea = document.createElement('textarea');
+            textarea.rows = 4;
+            textarea.value = savedVal;
+            textarea.className = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none text-base text-gray-900 transition';
+            textarea.addEventListener('input', function (e) {
+              userAnswers[item.slug] = e.target.value;
+              savePersistedState();
+              clearErrorOnWrapper(wrapper);
+            });
+            wrapper.appendChild(textarea);
+          } else {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = savedVal;
+            input.className = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-300 focus:border-gray-900 focus:outline-none text-base text-gray-900 transition';
+            input.addEventListener('input', function (e) {
+              userAnswers[item.slug] = e.target.value;
+              savePersistedState();
+              clearErrorOnWrapper(wrapper);
+            });
+            wrapper.appendChild(input);
+          }
+        }
+
+        if (item.type === 'enum' && Array.isArray(item.items)) {
+          const optionsBox = document.createElement('div');
+          optionsBox.className = 'space-y-2.5 pt-1';
+
+          item.items.forEach(function (opt) {
+            if (opt.hidden) return;
+            const optLabel = document.createElement('label');
+            optLabel.className = 'flex items-start gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition';
+
+            const input = document.createElement('input');
+            if (item.widget === 'checkbox') {
+              input.type = 'checkbox';
+              input.name = item.slug;
+              input.value = opt.slug;
+              const currentArr = Array.isArray(userAnswers[item.slug]) ? userAnswers[item.slug] : [];
+              input.checked = currentArr.indexOf(opt.slug) !== -1;
+              input.className = 'mt-1 w-4 h-4 accent-[#fc3f1d] shrink-0 cursor-pointer';
+              input.addEventListener('change', function () {
+                const arr = Array.isArray(userAnswers[item.slug]) ? userAnswers[item.slug].slice() : [];
+                const idx = arr.indexOf(opt.slug);
+                if (input.checked && idx === -1) arr.push(opt.slug);
+                if (!input.checked && idx !== -1) arr.splice(idx, 1);
+                userAnswers[item.slug] = arr;
+                savePersistedState();
+                clearErrorOnWrapper(wrapper);
+              });
+            } else {
+              input.type = 'radio';
+              input.name = item.slug;
+              input.value = opt.slug;
+              input.checked = userAnswers[item.slug] === opt.slug;
+              input.className = 'mt-1 w-4 h-4 accent-[#fc3f1d] shrink-0 cursor-pointer';
+              input.addEventListener('change', function () {
+                if (input.checked) {
+                  userAnswers[item.slug] = opt.slug;
+                  savePersistedState();
+                  clearErrorOnWrapper(wrapper);
+                }
+              });
+            }
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'text-base text-gray-800 leading-snug';
+            textSpan.textContent = opt.label;
+
+            optLabel.appendChild(input);
+            optLabel.appendChild(textSpan);
+            optionsBox.appendChild(optLabel);
+          });
+
+          wrapper.appendChild(optionsBox);
+        }
+
+        if (item.type === 'boolean') {
+          const boolLabel = document.createElement('label');
+          boolLabel.className = 'flex items-start gap-3 cursor-pointer';
+
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.checked = Boolean(userAnswers[item.slug]);
+          input.className = 'mt-1 w-4 h-4 accent-[#fc3f1d] shrink-0 cursor-pointer';
+          input.addEventListener('change', function () {
+            userAnswers[item.slug] = input.checked;
+            savePersistedState();
+            clearErrorOnWrapper(wrapper);
+            syncOfficialIframeOnFinalStep();
+          });
+
+          const textSpan = document.createElement('span');
+          textSpan.className = 'text-base text-gray-800 leading-snug';
+          textSpan.innerHTML = formatLabelWithLinks(item.label || '') + (req ? ' <span class="text-[#fc3f1d]">*</span>' : '');
+
+          boolLabel.appendChild(input);
+          boolLabel.appendChild(textSpan);
+          wrapper.appendChild(boolLabel);
+        }
+
+        const errEl = document.createElement('div');
+        errEl.className = 'field-error hidden text-xs font-medium text-[#fc3f1d] pt-1';
+        errEl.textContent = 'Это поле обязательно';
+        wrapper.appendChild(errEl);
+
+        container.appendChild(wrapper);
+      });
+
+      const btnPrev = document.getElementById('btnPrevPage');
+      const btnNext = document.getElementById('btnNextPage');
+      const btnSubmit = document.getElementById('btnSubmitForm');
+
+      btnPrev.textContent = (SURVEY_DATA.texts && SURVEY_DATA.texts.back) || 'Назад';
+      btnNext.textContent = (SURVEY_DATA.texts && SURVEY_DATA.texts.next) || 'Далее';
+      btnSubmit.textContent = (SURVEY_DATA.texts && SURVEY_DATA.texts.submit) || 'Отправить';
+      btnSubmit.disabled = false;
+
+      if (currentPageIndex === 0) {
+        btnPrev.classList.add('hidden');
+      } else {
+        btnPrev.classList.remove('hidden');
+      }
+
+      if (currentPageIndex === pages.length - 1) {
+        btnNext.classList.add('hidden');
+        btnSubmit.classList.remove('hidden');
+        syncOfficialIframeOnFinalStep();
+      } else {
+        btnNext.classList.remove('hidden');
+        btnSubmit.classList.add('hidden');
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function clearErrorOnWrapper(wrapper) {
+      const err = wrapper.querySelector('.field-error');
+      if (err) err.classList.add('hidden');
+    }
+
+    function validateCurrentPage() {
+      const pages = SURVEY_DATA.questions.pages;
+      const page = pages[currentPageIndex];
+      let valid = true;
+
+      page.items.forEach(function (item) {
+        if (item.hidden || item.type === 'comment') return;
+        if (!isItemRequired(item)) return;
+
+        const val = userAnswers[item.slug];
+        let isFilled = false;
+
+        if (item.type === 'string') {
+          isFilled = typeof val === 'string' && val.trim().length > 0;
+        } else if (item.type === 'enum') {
+          if (item.widget === 'checkbox') {
+            isFilled = Array.isArray(val) && val.length > 0;
+          } else {
+            isFilled = typeof val === 'string' && val.length > 0;
+          }
+        } else if (item.type === 'boolean') {
+          isFilled = val === true;
+        }
+
+        if (!isFilled) {
+          valid = false;
+          const wrapper = document.querySelector('[data-item-slug="' + item.slug + '"]');
+          if (wrapper) {
+            const err = wrapper.querySelector('.field-error');
+            if (err) err.classList.remove('hidden');
+          }
+        }
+      });
+
+      return valid;
+    }
+
+    function nextPage() {
+      if (!validateCurrentPage()) return;
+      const pages = SURVEY_DATA.questions.pages;
+      if (currentPageIndex < pages.length - 1) {
+        currentPageIndex += 1;
+        savePersistedState();
+        renderCurrentPage();
+      }
+    }
+
+    function prevPage() {
+      if (currentPageIndex > 0) {
+        currentPageIndex -= 1;
+        savePersistedState();
+        renderCurrentPage();
+      }
+    }
+
+    function calculateQuizScore() {
+      let totalEarned = 0;
+      const maxScores = parseFloat((SURVEY_DATA.quiz && SURVEY_DATA.quiz.total_scores) || '20') || 20;
+      const passScores = parseFloat((SURVEY_DATA.quiz && SURVEY_DATA.quiz.pass_scores) || '17') || 17;
+
+      SURVEY_DATA.questions.pages.forEach(function (page) {
+        page.items.forEach(function (item) {
+          if (!item.has_quiz || !Array.isArray(item.items)) return;
+          const ans = userAnswers[item.slug];
+
+          if (item.widget === 'checkbox') {
+            const selected = Array.isArray(ans) ? ans : [];
+            selected.forEach(function (slug) {
+              const found = item.items.find(function (o) { return o.slug === slug; });
+              if (found && found.correct) {
+                totalEarned += parseFloat(found.scores || '0') || 0;
+              }
+            });
+          } else {
+            const found = item.items.find(function (o) { return o.slug === ans; });
+            if (found && found.correct) {
+              totalEarned += parseFloat(found.scores || '0') || 0;
+            }
+          }
+        });
+      });
+
+      return {
+        earned: totalEarned,
+        total: maxScores,
+        passed: totalEarned >= passScores
+      };
+    }
+
+    function buildCandidateJsonPayloads() {
+      const modes = [
+        { useId: false, radioAsArray: true,  idAsNumber: false, boolAsString: false },
+        { useId: false, radioAsArray: false, idAsNumber: false, boolAsString: false },
+        { useId: true,  radioAsArray: true,  idAsNumber: false, boolAsString: false },
+        { useId: true,  radioAsArray: false, idAsNumber: false, boolAsString: false },
+        { useId: true,  radioAsArray: true,  idAsNumber: true,  boolAsString: false },
+        { useId: true,  radioAsArray: false, idAsNumber: true,  boolAsString: false },
+        { useId: false, radioAsArray: true,  idAsNumber: false, boolAsString: true  },
+        { useId: false, radioAsArray: false, idAsNumber: false, boolAsString: true  }
+      ];
+
+      return modes.map(function (mode) {
+        const payload = {};
+        SURVEY_DATA.questions.pages.forEach(function (page) {
+          page.items.forEach(function (item) {
+            if (item.hidden || item.type === 'comment') return;
+            let rawVal = userAnswers[item.slug];
+
+            if (item.type === 'boolean' && rawVal === undefined) {
+              rawVal = true;
+            }
+            if (rawVal === undefined || rawVal === null) return;
+
+            if (item.type === 'enum' && Array.isArray(item.items)) {
+              const mapOptValue = function (slugVal) {
+                const found = item.items.find(function (o) { return o.slug === slugVal; });
+                if (!found) return slugVal;
+                if (mode.useId) {
+                  return mode.idAsNumber ? Number(found.id) : String(found.id);
+                }
+                return String(found.slug);
+              };
+
+              if (item.widget === 'checkbox') {
+                const arr = Array.isArray(rawVal) ? rawVal : [rawVal];
+                payload[item.slug] = arr.map(mapOptValue);
+              } else {
+                const mapped = mapOptValue(rawVal);
+                payload[item.slug] = mode.radioAsArray ? [mapped] : mapped;
+              }
+            } else if (item.type === 'boolean') {
+              const boolVal = Boolean(rawVal);
+              payload[item.slug] = mode.boolAsString ? (boolVal ? 'True' : 'False') : boolVal;
+            } else {
+              payload[item.slug] = String(rawVal);
+            }
+          });
+        });
+        return payload;
+      });
+    }
+
+    function submitViaHiddenForm(actionUrl, useOptionId) {
+      try {
+        const hiddenForm = document.createElement('form');
+        hiddenForm.method = 'POST';
+        hiddenForm.action = actionUrl;
+        hiddenForm.target = 'hiddenSubmitTransport';
+        hiddenForm.style.display = 'none';
+
+        SURVEY_DATA.questions.pages.forEach(function (page) {
+          page.items.forEach(function (item) {
+            if (item.hidden || item.type === 'comment') return;
+            let val = userAnswers[item.slug];
+            if (item.type === 'boolean' && val === undefined) {
+              val = true;
+            }
+            if (val === undefined || val === null) return;
+
+            const resolveChoice = function (slugVal) {
+              if (!useOptionId || !Array.isArray(item.items)) return String(slugVal);
+              const found = item.items.find(function (o) { return o.slug === slugVal; });
+              return found ? String(found.id) : String(slugVal);
+            };
+
+            if (item.type === 'boolean') {
+              const inp = document.createElement('input');
+              inp.type = 'hidden';
+              inp.name = item.slug;
+              inp.value = val ? 'True' : 'False';
+              hiddenForm.appendChild(inp);
+            } else if (Array.isArray(val)) {
+              val.forEach(function (v) {
+                const inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = item.slug;
+                inp.value = resolveChoice(v);
+                hiddenForm.appendChild(inp);
+              });
+            } else if (item.type === 'enum') {
+              const inp = document.createElement('input');
+              inp.type = 'hidden';
+              inp.name = item.slug;
+              inp.value = resolveChoice(val);
+              hiddenForm.appendChild(inp);
+            } else {
+              const inp = document.createElement('input');
+              inp.type = 'hidden';
+              inp.name = item.slug;
+              inp.value = String(val);
+              hiddenForm.appendChild(inp);
+            }
+          });
+        });
+
+        document.body.appendChild(hiddenForm);
+        hiddenForm.submit();
+        setTimeout(function () {
+          if (hiddenForm.parentNode) hiddenForm.parentNode.removeChild(hiddenForm);
+        }, 4000);
+      } catch (e) {}
+    }
+
+    async function sendAnswersToYandexForms() {
+      const candidates = buildCandidateJsonPayloads();
+      const targetEndpoints = [
+        YANDEX_API_SUBMIT_URL,
+        'https://proxy.corsfix.com/?' + YANDEX_API_SUBMIT_URL,
+        'https://corsproxy.io/?url=' + encodeURIComponent(YANDEX_API_SUBMIT_URL),
+        'https://thingproxy.freeboard.io/fetch/' + YANDEX_API_SUBMIT_URL,
+        'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(YANDEX_API_SUBMIT_URL)
+      ];
+
+      let submittedOk = false;
+
+      for (let eIdx = 0; eIdx < targetEndpoints.length && !submittedOk; eIdx++) {
+        const endpoint = targetEndpoints[eIdx];
+        for (let cIdx = 0; cIdx < candidates.length && !submittedOk; cIdx++) {
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(candidates[cIdx])
+            });
+
+            if (resp.ok) {
+              const data = await resp.json().catch(function () { return null; });
+              if (data && (data.answer_id || data.answer_key || data.id)) {
+                submittedOk = true;
+                break;
+              }
+            }
+            if (resp.status === 404 || resp.status === 403 || resp.status === 401 || resp.status >= 500) {
+              break;
+            }
+          } catch (networkErr) {
+            break;
+          }
+        }
+      }
+
+      if (!submittedOk) {
+        syncOfficialIframeOnFinalStep();
+        submitViaHiddenForm(YANDEX_SURVEY_URL, false);
+        submitViaHiddenForm(YANDEX_IFRAME_BASE_URL, false);
+
+        try {
+          const prefillUrl = buildYandexPrefillUrl(false);
+          window.open(prefillUrl, '_blank', 'noopener,noreferrer');
+        } catch (e) {}
+      }
+
+      return submittedOk;
+    }
+
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      if (!validateCurrentPage()) return;
+
+      const btnSubmit = document.getElementById('btnSubmitForm');
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Отправка...';
+      }
+
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      isTestActive = false;
+      endTimeMs = null;
+      savePersistedState();
+
+      await sendAnswersToYandexForms();
+      finalizeTestScreen();
+    }
+
+    function finalizeTestScreen() {
+      const scoreInfo = calculateQuizScore();
+      document.getElementById('formContainer').classList.add('hidden');
+      document.getElementById('resultScreen').classList.remove('hidden');
+
+      document.getElementById('resultMainTitle').textContent = (SURVEY_DATA.texts && SURVEY_DATA.texts.title) || 'Спасибо!';
+      document.getElementById('resultSubtitle').textContent = ((SURVEY_DATA.texts && SURVEY_DATA.texts.subtitle) || 'Ваше сообщение отправлено.') + ' Тест закрыт.';
+
+      const quizItems = (SURVEY_DATA.quiz && SURVEY_DATA.quiz.items) || [];
+      const failText = (quizItems[0] && quizItems[0].title) || 'К сожалению вы не набрали необходимый минимум. Попробуйте еще раз!';
+      const passText = (quizItems[1] && quizItems[1].title) || 'Поздравляем! Вы успешно прошли тест';
+
+      const outcomeBox = document.getElementById('quizOutcomeBox');
+      const outcomeTitle = document.getElementById('quizOutcomeTitle');
+      const scoreLine = document.getElementById('quizScoreLine');
+      const attemptsTxt = document.getElementById('resultAttemptsText');
+
+      if (scoreInfo.passed) {
+        outcomeBox.className = 'p-5 rounded-xl border border-emerald-200 bg-emerald-50 space-y-2';
+        outcomeTitle.className = 'text-lg font-bold text-emerald-900';
+        outcomeTitle.textContent = passText;
+      } else {
+        outcomeBox.className = 'p-5 rounded-xl border border-amber-200 bg-amber-50 space-y-2';
+        outcomeTitle.className = 'text-lg font-bold text-amber-900';
+        outcomeTitle.textContent = failText;
+      }
+
+      scoreLine.textContent = 'Набрано баллов: ' + scoreInfo.earned + ' из ' + scoreInfo.total;
+      const rem = Math.max(0, MAX_ATTEMPTS - attemptsUsed);
+      if (attemptsTxt) {
+        attemptsTxt.textContent = rem > 0
+          ? 'Использовано попыток: ' + attemptsUsed + ' из ' + MAX_ATTEMPTS + ' (доступна ещё ' + rem + ' попытка)'
+          : 'Использовано попыток: ' + attemptsUsed + ' из ' + MAX_ATTEMPTS + ' (попытки исчерпаны, тест закрыт)';
+      }
+
+      buildCorrectReview();
+      updateAttemptsUI();
+    }
+
+    function buildCorrectReview() {
+      const reviewContainer = document.getElementById('correctReviewContainer');
+      reviewContainer.innerHTML = '';
+
+      SURVEY_DATA.questions.pages.forEach(function (page) {
+        page.items.forEach(function (item) {
+          if (!item.has_quiz || !Array.isArray(item.items)) return;
+
+          const card = document.createElement('div');
+          card.className = 'p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2 text-sm';
+
+          const qTitle = document.createElement('div');
+          qTitle.className = 'font-semibold text-gray-900';
+          qTitle.textContent = item.label;
+          card.appendChild(qTitle);
+
+          const ans = userAnswers[item.slug];
+          const selectedArr = Array.isArray(ans) ? ans : (ans ? [ans] : []);
+
+          item.items.forEach(function (opt) {
+            const isChosen = selectedArr.indexOf(opt.slug) !== -1;
+            const row = document.createElement('div');
+            if (opt.correct) {
+              row.className = 'px-3 py-1.5 rounded-lg bg-emerald-100/80 text-emerald-900 font-medium flex items-center justify-between gap-2';
+              row.innerHTML = '<span>✓ ' + escapeHtml(opt.label) + '</span><span class="text-xs shrink-0">' + (isChosen ? 'Ваш выбор (верно)' : 'Правильный ответ') + '</span>';
+            } else if (isChosen) {
+              row.className = 'px-3 py-1.5 rounded-lg bg-rose-100/80 text-rose-900 font-medium flex items-center justify-between gap-2';
+              row.innerHTML = '<span>✕ ' + escapeHtml(opt.label) + '</span><span class="text-xs shrink-0">Ваш выбор (неверно)</span>';
+            } else {
+              row.className = 'px-3 py-1.5 text-gray-500';
+              row.textContent = opt.label;
+            }
+            card.appendChild(row);
+          });
+
+          reviewContainer.appendChild(card);
+        });
+      });
+    }
+
+    function toggleCorrectReview() {
+      const el = document.getElementById('correctReviewContainer');
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function fillAgain() {
+      if (attemptsUsed >= MAX_ATTEMPTS) {
+        updateAttemptsUI();
+        return;
+      }
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      userAnswers = {};
+      currentPageIndex = 0;
+      endTimeMs = null;
+      isTestActive = false;
+      savePersistedState();
+
+      const display = document.getElementById('timerDisplay');
+      if (display) {
+        display.textContent = '30:00';
+        display.className = 'font-mono text-xl font-bold text-gray-900';
+      }
+
+      document.getElementById('correctReviewContainer').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('expiredScreen').classList.add('hidden');
+      document.getElementById('formContainer').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      updateAttemptsUI();
+    }
+
+    // Инициализация при загрузке страницы
+    window.addEventListener('DOMContentLoaded', function () {
+      loadPersistedState();
+      updateAttemptsUI();
+
+      if (isTestActive && endTimeMs) {
+        if (Date.now() >= endTimeMs) {
+          updateTimer();
+        } else {
+          document.getElementById('startScreen').classList.add('hidden');
+          document.getElementById('formContainer').classList.remove('hidden');
+          renderCurrentPage();
+          updateTimer();
+          if (timerInterval) clearInterval(timerInterval);
+          timerInterval = setInterval(updateTimer, 250);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
