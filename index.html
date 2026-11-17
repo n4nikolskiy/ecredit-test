@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ежеквартальный тест eCredit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f4f6;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4">
+
+  <!-- Плашка таймера 30:00 -->
+  <div class="sticky top-3 z-50 w-full max-w-[680px] mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-3 flex items-center justify-between gap-4">
+      <span id="timerLabel" class="text-sm font-medium text-gray-600">Осталось времени:</span>
+      <span id="timerDisplay" class="font-mono text-xl font-bold text-gray-900">30:00</span>
+    </div>
+  </div>
+
+  <!-- Контейнер теста -->
+  <main class="w-full max-w-[680px] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+
+    <!-- Экран до нажатия на кнопку «Начать тест» -->
+    <div id="startScreen">
+      <img
+        src="https://avatars.mds.yandex.net/get-forms/21064524/9efea03a8382715f0146c4a149e10be0/1280x"
+        alt="Ежеквартальный тест eCredit"
+        class="w-full max-w-full h-auto block"
+      />
+      <div class="p-6 sm:p-8 space-y-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Ежеквартальный тест eCredit</h1>
+
+        <div class="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
+          <div class="text-sm font-semibold text-gray-900">Условия прохождения теста:</div>
+          <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <li>На прохождение теста даётся ровно <strong>30 минут</strong>.</li>
+            <li>Таймер запускается сразу после нажатия на кнопку «Начать тест».</li>
+          </ul>
+        </div>
+
+        <button
+          type="button"
+          id="btnStartTest"
+          class="px-6 py-3 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] active:bg-[#c92e12] text-white font-medium text-base transition cursor-pointer"
+        >
+          Начать тест
+        </button>
+      </div>
+    </div>
+
+    <!-- Встроенная Google Форма -->
+    <div id="formContainer" class="hidden">
+      <iframe
+        id="googleFormIframe"
+        src="about:blank"
+        title="Ежеквартальный тест eCredit"
+        frameborder="0"
+        marginheight="0"
+        marginwidth="0"
+        class="w-full max-w-full block border-0 h-[820px]"
+      >Загрузка…</iframe>
+    </div>
+
+    <!-- Экран по истечении 30 минут -->
+    <div id="expiredScreen" class="hidden p-8 text-center space-y-4">
+      <p class="text-lg font-semibold text-gray-900">Время на прохождение теста (30 минут) истекло. Тест закрыт.</p>
+      <button
+        type="button"
+        id="btnRestartAfterExpired"
+        class="px-5 py-2.5 rounded-lg bg-[#fc3f1d] hover:bg-[#e03516] text-white font-medium text-sm transition cursor-pointer"
+      >
+        Заполнить ещё раз
+      </button>
+    </div>
+
+  </main>
+
+  <script>
+    const GOOGLE_FORM_EMBED_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSf4tK4kYVmlGjZk2mn9dC-aBGHf1KBaqqGBLPZjntDy_4Lymg/viewform?embedded=true';
+    const DURATION_SECONDS = 30 * 60; // 1800 секунд = 30 минут
+    const STORAGE_KEY = 'ecredit_google_form_timer_v2';
+
+    let timerInterval = null;
+    let endTimeMs = null;
+    let isTestActive = false;
+    let isCompleted = false;
+    let stoppedTimeText = null;
+    let iframeLoadCount = 0;
+
+    function loadPersistedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.isCompleted) {
+          isCompleted = true;
+          stoppedTimeText = data.stoppedTimeText || '00:00';
+          isTestActive = false;
+          endTimeMs = null;
+        } else if (data.isTestActive && data.endTimeMs) {
+          isTestActive = true;
+          endTimeMs = data.endTimeMs;
+        }
+      } catch (e) {
+        // Игнорируем ошибки localStorage
+      }
+    }
+
+    function savePersistedState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          isTestActive: isTestActive,
+          endTimeMs: endTimeMs,
+          isCompleted: isCompleted,
+          stoppedTimeText: stoppedTimeText
+        }));
+      } catch (e) {
+        // Игнорируем ошибки localStorage
+      }
+    }
+
+    function formatTime(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    }
+
+    function updateTimer() {
+      const display = document.getElementById('timerDisplay');
+      if (!endTimeMs || isCompleted) return;
+
+      const remainingMs = endTimeMs - Date.now();
+      const remainingSec = Math.ceil(remainingMs / 1000);
+
+      if (remainingMs <= 0) {
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        isTestActive = false;
+        isCompleted = false;
+        endTimeMs = null;
+        savePersistedState();
+
+        if (display) {
+          display.textContent = '00:00';
+          display.className = 'font-mono text-xl font-bold text-red-600';
+        }
+
+        const iframe = document.getElementById('googleFormIframe');
+        if (iframe) iframe.src = 'about:blank';
+
+        document.getElementById('formContainer').classList.add('hidden');
+        document.getElementById('expiredScreen').classList.remove('hidden');
+        return;
+      }
+
+      if (display) {
+        display.textContent = formatTime(remainingSec);
+        display.className = remainingSec <= 60
+          ? 'font-mono text-xl font-bold text-red-600'
+          : 'font-mono text-xl font-bold text-gray-900';
+      }
+    }
+
+    function stopTimerOnSubmit() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      const display = document.getElementById('timerDisplay');
+      const label = document.getElementById('timerLabel');
+
+      if (endTimeMs) {
+        const remainingSec = Math.max(0, Math.ceil((endTimeMs - Date.now()) / 1000));
+        stoppedTimeText = formatTime(remainingSec);
+      } else if (display) {
+        stoppedTimeText = display.textContent || '00:00';
+      }
+
+      isTestActive = false;
+      isCompleted = true;
+      endTimeMs = null;
+      savePersistedState();
+
+      if (label) label.textContent = 'Тест отправлен (остаток времени):';
+      if (display) {
+        display.textContent = stoppedTimeText;
+        display.className = 'font-mono text-xl font-bold text-emerald-600';
+      }
+    }
+
+    function openGoogleFormIframe() {
+      const iframe = document.getElementById('googleFormIframe');
+      iframeLoadCount = 0;
+      if (iframe) {
+        iframe.src = GOOGLE_FORM_EMBED_URL;
+      }
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('expiredScreen').classList.add('hidden');
+      document.getElementById('formContainer').classList.remove('hidden');
+    }
+
+    function startTest() {
+      isCompleted = false;
+      stoppedTimeText = null;
+      isTestActive = true;
+      endTimeMs = Date.now() + DURATION_SECONDS * 1000;
+      savePersistedState();
+
+      const label = document.getElementById('timerLabel');
+      if (label) label.textContent = 'Осталось времени:';
+
+      openGoogleFormIframe();
+      updateTimer();
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 250);
+    }
+
+    function fillAgain() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      endTimeMs = null;
+      isTestActive = false;
+      isCompleted = false;
+      stoppedTimeText = null;
+      iframeLoadCount = 0;
+      savePersistedState();
+
+      const iframe = document.getElementById('googleFormIframe');
+      if (iframe) iframe.src = 'about:blank';
+
+      const label = document.getElementById('timerLabel');
+      const display = document.getElementById('timerDisplay');
+      if (label) label.textContent = 'Осталось времени:';
+      if (display) {
+        display.textContent = '30:00';
+        display.className = 'font-mono text-xl font-bold text-gray-900';
+      }
+
+      document.getElementById('expiredScreen').classList.add('hidden');
+      document.getElementById('formContainer').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('btnStartTest').addEventListener('click', startTest);
+      document.getElementById('btnRestartAfterExpired').addEventListener('click', fillAgain);
+
+      const iframe = document.getElementById('googleFormIframe');
+      if (iframe) {
+        iframe.addEventListener('load', function () {
+          if (!isTestActive || isCompleted) return;
+          const currentSrc = iframe.getAttribute('src');
+          if (!currentSrc || currentSrc === 'about:blank') return;
+
+          iframeLoadCount += 1;
+          if (iframeLoadCount >= 2) {
+            stopTimerOnSubmit();
+          }
+        });
+      }
+
+      loadPersistedState();
+
+      if (isCompleted) {
+        const label = document.getElementById('timerLabel');
+        const display = document.getElementById('timerDisplay');
+        if (label) label.textContent = 'Тест отправлен (остаток времени):';
+        if (display) {
+          display.textContent = stoppedTimeText || '00:00';
+          display.className = 'font-mono text-xl font-bold text-emerald-600';
+        }
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('formContainer').classList.remove('hidden');
+        if (iframe) iframe.src = GOOGLE_FORM_EMBED_URL;
+      } else if (isTestActive && endTimeMs) {
+        if (Date.now() >= endTimeMs) {
+          updateTimer();
+        } else {
+          openGoogleFormIframe();
+          updateTimer();
+          if (timerInterval) clearInterval(timerInterval);
+          timerInterval = setInterval(updateTimer, 250);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
